@@ -19,6 +19,7 @@ class MarkdownBuild(sublime_plugin.WindowCommand):
         open_html_in = s.get("open_html_in", "browser")
         use_css = s.get("use_css", True)
         charset = s.get("charset", "UTF-8")
+        wrap_markdown = s.get("wrap_markdown", True)
 
         view = self.window.active_view()
         if not view:
@@ -28,13 +29,17 @@ class MarkdownBuild(sublime_plugin.WindowCommand):
             return
         contents = view.substr(sublime.Region(0, view.size()))
         md = markdown_python.markdown(contents)
-        html = '<html><meta charset="' + charset + '">'
-        if use_css:
-            css = os.path.join(sublime.packages_path(), 'MarkdownBuild', 'markdown.css')
-            if (os.path.isfile(css)):
-                styles = open(css, 'r').read()
-                html += '<style>' + styles + '</style>'
-        html += "<body>" + md + "</body></html>"
+
+        if wrap_markdown:
+            html = '<html><meta charset="' + charset + '">'
+            if use_css:
+                css = os.path.join(sublime.packages_path(), 'MarkdownBuild', 'markdown.css')
+                if (os.path.isfile(css)):
+                    styles = open(css, 'r').read()
+                    html += '<style>' + styles + '</style>'
+            html += "<body>" + md + "</body></html>"
+        else:
+            html = md
 
         if output_html:
             html_name = os.path.splitext(file_name)[0]
@@ -46,14 +51,15 @@ class MarkdownBuild(sublime_plugin.WindowCommand):
         output.write(html.encode('UTF-8'))
         output.close()
 
-        if open_html_in == "both":
-            webbrowser.open("file://" + output.name)
-            self.window.open_file(output.name)
-        elif open_html_in == "sublime":
-            self.window.open_file(output.name)
-        else:
-            webbrowser.open("file://" + output.name)
-                
+        if open_html_in != "none":
+            if open_html_in == "both":
+                webbrowser.open("file://" + output.name)
+                self.window.open_file(output.name)
+            elif open_html_in == "sublime":
+                self.window.open_file(output.name)
+            else:
+                webbrowser.open("file://" + output.name)
+
         #sublime.set_timeout(partial(ctypes.windll.user32.SwitchToThisWindow,sublime.active_window().hwnd(), 0), 250)
         #sublime.set_timeout(partial(ctypes.windll.user32.ShowWindow,sublime.active_window().hwnd(), 5), 500)
         #sublime.set_timeout(partial(ctypes.windll.user32.SetActiveWindow,sublime.active_window().hwnd()), 500)
